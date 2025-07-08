@@ -272,7 +272,7 @@ resource "azurerm_virtual_machine_extension" "iis_and_diagnostics" {
   type                 = "CustomScriptExtension"
   type_handler_version = "1.10"
 
- settings = jsonencode({
+  settings = jsonencode({
     fileUris = ["https://raw.githubusercontent.com/nightraider007/IaC_Terraform/main/0.Project/scripts/setup.ps1"]
   })
 
@@ -284,7 +284,6 @@ resource "azurerm_virtual_machine_extension" "iis_and_diagnostics" {
     azurerm_windows_virtual_machine.vm_web
   ]
 }
-
 
 
 
