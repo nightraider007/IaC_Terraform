@@ -1,0 +1,44 @@
+terraform {
+  required_version = ">= 1.4.0"
+
+  required_providers {
+    random = {
+      source  = "hashicorp/random"
+      version = ">= 3.5.1"
+    }
+  }
+}
+
+variable "myfirstname" {
+  type        = string
+  description = "Your first name"
+
+    default     = "Tox"
+  
+}
+
+variable "mylastname" {
+  type        = string
+  description = "Your last name"
+
+    default     = "OG"
+  
+}
+
+locals {
+    # This local variable combines the first and last name into a single string
+    fullname = "Mr ${var.myfirstname} ${var.mylastname}"
+}
+
+resource "random_string" "name" {
+  count = 1
+  length = 50
+  # Use the fullname local variable to generate a unique name
+
+}
+
+output "fullname" {
+  value = "${local.fullname}-->>> ${random_string.name[0].result}"
+  description = "The full name with a random pet suffix"
+
+}

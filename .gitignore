@@ -1,0 +1,74 @@
+# VSCode settings folder
+.vscode/
+
+# Terraform files to ignore
+*.tfstate
+*.tfstate.*
+*.backup
+*.log
+.terraform/
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraform.lock.hcl
+
+# Azure related
+*.azure*
+
+# Python related
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+*.egg-info/
+pip-log.txt
+pip-delete-this-directory.txt
+*.egg
+*.manifest
+*.spec
+
+# General OS & Editor junk
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+
+# Log files
+*.log
+
+# Backup files
+*~
+*.bak
+*.tmp
+
+# Ignore environment variable files (could contain secrets)
+*.env
+.env.*
+
+# Ignore secret/key files
+*.pem
+*.key
+
+# Ignore compiled binaries or cache
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Ignore database files
+*.sqlite3
+
+# Ignore JetBrains IDE files (in case)
+.idea/
+
+# Ignore node_modules if you have any JS/Node code
+node_modules/
