@@ -23,12 +23,18 @@ resource "azurerm_key_vault" "appvault" {
   sku_name                    = "standard"                          // Standard SKU is sufficient for most use cases
   
   # ✅ Enables RBAC instead of traditional access policies
-  access_policy               = []
   enable_rbac_authorization   = true
                            
 }
 
 
+
+
+resource "azurerm_role_assignment" "keyvault_rbac" {
+  scope                = azurerm_key_vault.appvault.id
+  role_definition_name = "Key Vault Secrets Officer"  # or "Key Vault Administrator"
+  principal_id         = data.azurerm_client_config.current.object_id
+}
 
 
 
