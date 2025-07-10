@@ -297,7 +297,7 @@ resource "azurerm_windows_virtual_machine" "vm_web" {
   ]
 }
 
-resource "azurerm_virtual_machine_extension" "iis_and_diagnostics" {
+/* resource "azurerm_virtual_machine_extension" "iis_and_diagnostics" {
   name                 = "iis-and-diagnostics"
   virtual_machine_id   = azurerm_windows_virtual_machine.vm_web.id
   publisher            = "Microsoft.Compute"
@@ -315,7 +315,33 @@ resource "azurerm_virtual_machine_extension" "iis_and_diagnostics" {
   depends_on = [
     azurerm_windows_virtual_machine.vm_web
   ]
+} */
+
+
+resource "azurerm_virtual_machine_extension" "iis_and_diagnostics" {
+  name                 = "custom-script"
+  virtual_machine_id   = azurerm_windows_virtual_machine.vm_web.id
+  publisher            = "Microsoft.Compute"
+  type                 = "CustomScriptExtension"
+  type_handler_version = "1.10"
+
+  settings = jsonencode({
+    fileUris = [
+      "https://raw.githubusercontent.com/nightraider007/IaC_Terraform/main/0.Project/scripts/setup-iis.ps1"
+      
+    ]
+    #,"https://raw.githubusercontent.com/nightraider007/IaC_Terraform/main/0.Project/scripts/setup-webfiles.ps1"
+  })
+
+  protected_settings = jsonencode({
+    commandToExecute = "powershell -ExecutionPolicy Unrestricted -File setup-iis.ps1; powershell -ExecutionPolicy Unrestricted -File setup-webfiles.ps1"
+  })
+
+  # Ensure correct dependency ordering if needed
+  depends_on = [     azurerm_windows_virtual_machine.vm_web  ]
 }
+
+
 
 
 
