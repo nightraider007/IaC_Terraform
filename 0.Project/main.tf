@@ -327,7 +327,7 @@ resource "azurerm_virtual_machine_extension" "iis_and_diagnostics" {
 
   settings = jsonencode({
     fileUris = [
-      "https://raw.githubusercontent.com/nightraider007/IaC_Terraform/main/0.Project/scripts/setup-iis.ps1"
+      "https://raw.githubusercontent.com/nightraider007/IaC_Terraform/main/0.Project/scripts/setup-vm.ps1"
       
     ]
     #,"https://raw.githubusercontent.com/nightraider007/IaC_Terraform/main/0.Project/scripts/setup-webfiles.ps1"
