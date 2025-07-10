@@ -120,23 +120,14 @@ resource "azurerm_subnet" "subnet_db" {
 #---------------------------
 # Network Security Group
 #---------------------------
+
+
 resource "azurerm_network_security_group" "nsg_web" {
   name                = "nsg-web"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
-
-  security_rule {
-    name                       = "Allow-HTTP"
-    priority                   = 100
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = "80"
-    source_address_prefix      = "*"
-    destination_address_prefix = "*"
-  }
-
+// maybe later refactor this to use dynamic blocks for rules tellme more copilot
+  
   security_rule {
     name                       = "Allow-SSH"
     priority                   = 110
@@ -391,7 +382,10 @@ resource "azurerm_key_vault" "kv" {
 
   tags = var.project_config.tags
 }
-# The user identity used to authenticate Terraform in this deployment is an 
+
+#RBAC inheritance, control plane vs data plane, and role assignment constraints 
+#ephemeral nature of Key Vault role assignments
+# The user identity(SP) used to authenticate Terraform in this deployment is an 
 # **application object** (a service principal) created through an Azure App Registration.
 # Authentication is handled via the app's **client ID and client secret**, defined in the provider block.
 #
@@ -406,6 +400,8 @@ resource "azurerm_key_vault" "kv" {
 # To work around this:
 # → The service principal was granted **User Access Administrator** (or **Owner**) **at the resource group level**.
 # This ensures that any Key Vault created under that resource group will inherit the correct access context.
+# RBAC roles for Key Vault: See full explanation in:
+# ./0.Project/helper_files/read_comments.md
 #
 # As a result, Terraform was able to:
 # - Create the Key Vault with `enable_rbac_authorization = true`
