@@ -1,3 +1,44 @@
+data "azurerm_client_config" "current" {}
+#--------------------------------------------------
+# Terraform Core Settings and Provider Requirements
+#--------------------------------------------------
+
+terraform {
+  required_version = ">= 1.8.0"
+
+
+  required_providers {
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "~> 4.4.0"
+    }
+  }
+}
+
+
+#-------------------------
+# Azure Provider Configuration
+#-------------------------
+provider "azurerm" {
+
+  # The features block is mandatory for the azurerm provider, even if empty  
+  features {
+    resource_group {
+      prevent_deletion_if_contains_resources = true
+    }
+
+  } # Mandatory for azurerm, even if empty
+
+
+  # Avoid hardcoding credentials here in production — instead use environment variables or a secrets vault
+  client_id       = var.client_id
+  client_secret   = var.client_secret
+  subscription_id = var.subscription_id
+  tenant_id       = var.tenant_id
+}
+
+
+
 
 variable "client_id" {
   description = "Azure Client ID"
@@ -232,7 +273,7 @@ resource "azurerm_windows_virtual_machine" "vm_web" {
   resource_group_name   = azurerm_resource_group.rg.name
   size                  = "Standard_B2ats_v2"
   admin_username        = "Jaydyn"
-  admin_password        = var.project_config.pwd # ❗Replace with a secure secret or use Key Vault
+  admin_password        = var.project_config.pwd  //admin_password = azurerm_key_vault_secret.admin_password.value # ❗Replace with a secure secret or use Key Vault
   network_interface_ids = [azurerm_network_interface.nic_web.id]
 
   zone                     = "1" # Based on "self-selected zone"
@@ -285,5 +326,114 @@ resource "azurerm_virtual_machine_extension" "iis_and_diagnostics" {
   ]
 }
 
+
+
+
+
+
+# Output (Optional)
+output "vnet_id" {
+  value = azurerm_virtual_network.vnet.id
+}
+
+output "subnet_ids" {
+  value = [azurerm_subnet.subnet_web.id, azurerm_subnet.subnet_db.id]
+}
+
+# outputs.tf
+
+# Output the VM name
+output "vm_name" {
+  description = "The name of the Windows virtual machine"
+  value       = azurerm_windows_virtual_machine.vm_web.name
+}
+
+# Output the VM private IP address (from NIC)
+output "vm_private_ip" {
+  description = "The private IP address assigned to the VM"
+  value       = azurerm_network_interface.nic_web.ip_configuration[0].private_ip_address
+}
+
+# Output the VM public IP address
+output "vm_public_ip" {
+  description = "The public IP address assigned to the VM"
+  value       = azurerm_public_ip.vm_web_ip.ip_address
+}
+
+# Output the DNS name label assigned to the public IP (if set)
+output "vm_public_dns" {
+  description = "The FQDN associated with the public IP (DNS label)"
+  value       = azurerm_public_ip.vm_web_ip.fqdn
+}
+
+
+# Output the resource group name
+output "resource_group_name" {
+  description = "The resource group that contains the VM"
+  value       = azurerm_resource_group.rg.name
+}
+
+# Output the network security group (NSG) ID for the web subnet
+output "nsg_web_id" {
+  description = "Network Security Group ID applied to the web subnet"
+  value       = azurerm_network_security_group.nsg_web.id
+}
+
+
+# Create Key Vault with RBAC enabled
+resource "azurerm_key_vault" "kv" {
+  name                        = "${var.project_config.project_name}-${var.project_config.environment}-kv"
+  location                    = var.project_config.location
+  resource_group_name         = azurerm_resource_group.rg.name
+  tenant_id                   = var.tenant_id
+  sku_name                    = "standard"
+  enable_rbac_authorization   = true    # <-- RBAC enabled instead of access policies
+
+  tags = var.project_config.tags
+}
+# The user identity used to authenticate Terraform in this deployment is an 
+# **application object** (a service principal) created through an Azure App Registration.
+# Authentication is handled via the app's **client ID and client secret**, defined in the provider block.
+#
+# In order to allow this service principal to interact with the Key Vault (specifically, 
+# to store secrets using RBAC-based access control), it has been assigned the necessary 
+# **Key Vault Secrets Officer** and **Key Vault Secrets User** roles.
+#
+# However, role assignments on the Key Vault cannot be performed by this service principal alone,
+# because the **Contributor** role (which it inherited at the Key Vault level) does **not** grant
+# permission to assign RBAC roles (i.e., lacks `Microsoft.Authorization/roleAssignments/write`).
+#
+# To work around this:
+# → The service principal was granted **User Access Administrator** (or **Owner**) **at the resource group level**.
+# This ensures that any Key Vault created under that resource group will inherit the correct access context.
+#
+# As a result, Terraform was able to:
+# - Create the Key Vault with `enable_rbac_authorization = true`
+# - Assign the correct roles to the service principal
+# - Create and store the admin password as a secret inside the Key Vault using RBAC
+
+
+# Role 1: Key Vault Secrets User → Read/list secrets
+/* resource "azurerm_role_assignment" "kv_secrets_user" {
+  scope                = azurerm_key_vault.kv.id
+  role_definition_name = "Key Vault Secrets User"
+  principal_id         = data.azurerm_client_config.current.object_id
+}
+
+# Role 2: Key Vault Secrets Officer → Create/update/delete secrets
+resource "azurerm_role_assignment" "kv_secrets_officer" {
+  scope                = azurerm_key_vault.kv.id
+  role_definition_name = "Key Vault Secrets Officer"
+  principal_id         = data.azurerm_client_config.current.object_id
+} */
+
+
+
+# Store secret in Key Vault
+ resource "azurerm_key_vault_secret" "admin_password" {
+  name         = "adminPassword"
+  value        = var.project_config.pwd
+  key_vault_id = azurerm_key_vault.kv.id
+} 
 
 
